@@ -43,8 +43,8 @@ namespace params
     {
         static std::map<Names, juce::String> params =
         {
-            { LOW_MID_CROSSOVER_FREQ, "Low-Mid Crossover Frquency" },
-            { MID_HIGH_CROSSOVER_FREQ, "Mid-High Crossover Frquency" },
+            { LOW_MID_CROSSOVER_FREQ, "Low-Mid Crossover Frequency" },
+            { MID_HIGH_CROSSOVER_FREQ, "Mid-High Crossover Frequency" },
             { ATTACK_LOW, "Attack Low Band" },
             { ATTACK_MID, "Attack Mid Band" },
             { ATTACK_HIGH, "Attack High Band" },
@@ -124,11 +124,16 @@ private:
     CompressorBand compressorBand;
 
     using Filter = juce::dsp::LinkwitzRileyFilter<float>;
-    Filter lowFilter, highFilter;
+
+    //     cutoff 0   cutoff 1
+    Filter lowpass0,  allpass1,
+           highpass0, lowpass1,
+                      highpass1;
 
     juce::AudioParameterFloat* lowMidCrossoverFreq{ nullptr };
+    juce::AudioParameterFloat* midHighCrossoverFreq{ nullptr };
 
-    std::array<juce::AudioBuffer<float>, 2> filterBuffers;
+    std::array<juce::AudioBuffer<float>, 3> filterBuffers;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleMBCompAudioProcessor)

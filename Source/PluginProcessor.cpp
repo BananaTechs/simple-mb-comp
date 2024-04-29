@@ -50,10 +50,14 @@ SimpleMBCompAudioProcessor::SimpleMBCompAudioProcessor()
     setChoiceParam(compressorBand.ratio, Names::RATIO_LOW);
     setBoolParam(compressorBand.bypass, Names::BYPASS_LOW);
 
-    setFloatParam(lowMidCrossoverFreq, Names::LOW_MID_CROSSOVER_FREQ); 
+    setFloatParam(lowMidCrossoverFreq, Names::LOW_MID_CROSSOVER_FREQ);
+    setFloatParam(midHighCrossoverFreq, Names::MID_HIGH_CROSSOVER_FREQ);
 
-    lowFilter.setType(juce::dsp::LinkwitzRileyFilterType::lowpass);
-    highFilter.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+    lowpass0.setType(juce::dsp::LinkwitzRileyFilterType::lowpass);
+    highpass0.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+    lowpass1.setType(juce::dsp::LinkwitzRileyFilterType::lowpass);
+    highpass1.setType(juce::dsp::LinkwitzRileyFilterType::highpass);
+    allpass1.setType(juce::dsp::LinkwitzRileyFilterType::allpass);
 }
 
 SimpleMBCompAudioProcessor::~SimpleMBCompAudioProcessor()
@@ -134,8 +138,11 @@ void SimpleMBCompAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     spec.numChannels = getTotalNumOutputChannels();
 
     compressorBand.prepare(spec);
-    lowFilter.prepare(spec);
-    highFilter.prepare(spec);
+    lowpass0.prepare(spec);
+    highpass0.prepare(spec);
+    lowpass1.prepare(spec);
+    highpass1.prepare(spec);
+    allpass1.prepare(spec);
 
     for (auto& buffer : filterBuffers)
     {
@@ -193,31 +200,52 @@ void SimpleMBCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     /*compressorBand.updateCompressorSettings();
     compressorBand.process(buffer);*/
 
-    for (auto& filterBuffer : filterBuffers)
-    {
-        filterBuffer = buffer;
-    }
+    filterBuffers[0] = buffer;
+    filterBuffers[1] = buffer;
 
-    auto cutoff = lowMidCrossoverFreq->get();
-    lowFilter.setCutoffFrequency(cutoff);
-    highFilter.setCutoffFrequency(cutoff);
+    auto cutoff0 = lowMidCrossoverFreq->get();
+    auto cutoff1 = midHighCrossoverFreq->get();
+
+    lowpass0.setCutoffFrequency(cutoff0);
+    highpass0.setCutoffFrequency(cutoff0);
+    lowpass1.setCutoffFrequency(cutoff1);
+    highpass1.setCutoffFrequency(cutoff1);
+    allpass1.setCutoffFrequency(cutoff1);
+
 
     auto fb0Block = juce::dsp::AudioBlock<float>(filterBuffers[0]);
     auto fb1Block = juce::dsp::AudioBlock<float>(filterBuffers[1]);
-    auto fb0Ctx = juce::dsp::ProcessContextReplacing(fb0Block);
-    auto fb1Ctx = juce::dsp::ProcessContextReplacing(fb1Block);
+    auto fb2Block = juce::dsp::AudioBlock<float>(filterBuffers[2]);
+    auto fb0Ctx = juce::dsp::ProcessContextReplacing<float>(fb0Block);
+    auto fb1Ctx = juce::dsp::ProcessContextReplacing<float>(fb1Block);
+    auto fb2Ctx = juce::dsp::ProcessContextReplacing<float>(fb2Block);
 
-    lowFilter.process(fb0Ctx);
-    highFilter.process(fb1Ctx);
+    lowpass0.process(fb0Ctx);
+    highpass0.process(fb1Ctx);
 
     buffer.clear();
 
-    for (int i = 0; i < buffer.getNumChannels(); i++)
-    {
-        buffer.addFrom(i, 0, filterBuffers[0], i, 0, buffer.getNumSamples());
-        buffer.addFrom(i, 0, filterBuffers[1], i, 0, buffer.getNumSamples());
-    }
+    auto numSamples = buffer.getNumSamples();
+    auto numChannels = buffer.getNumChannels();
 
+    auto addToBuffer = [ns = numSamples, nc = numChannels](juce::AudioBuffer<float>& dest, const auto& source)
+    {
+        for (int i = 0; i < nc; i++)
+        {
+            dest.addFrom(i, 0, source, i, 0, ns);
+        }
+    };
+
+    filterBuffers[2] = filterBuffers[1];
+
+    lowpass1.process(fb1Ctx);
+    highpass1.process(fb2Ctx);
+
+    allpass1.process(fb0Ctx);
+
+    addToBuffer(buffer, filterBuffers[0]);
+    addToBuffer(buffer, filterBuffers[1]);
+    addToBuffer(buffer, filterBuffers[2]);
 }
 
 //==============================================================================
@@ -306,6 +334,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleMBCompAudioProcessor::
         params.at(Names::LOW_MID_CROSSOVER_FREQ),
         NormalisableRange<float>(20, 20000, 1, 0.25),
         500));
+
+    layout.add(std::make_unique<AudioParameterFloat>(
+        params.at(Names::MID_HIGH_CROSSOVER_FREQ),
+        params.at(Names::MID_HIGH_CROSSOVER_FREQ),
+        NormalisableRange<float>(20, 20000, 1, 0.5),
+        3000));
 
     return layout;
 }
