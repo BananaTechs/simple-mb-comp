@@ -123,6 +123,13 @@ public:
 private:
     CompressorBand compressorBand;
 
+    using Filter = juce::dsp::LinkwitzRileyFilter<float>;
+    Filter lowFilter, highFilter;
+
+    juce::AudioParameterFloat* lowMidCrossoverFreq{ nullptr };
+
+    std::array<juce::AudioBuffer<float>, 2> filterBuffers;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleMBCompAudioProcessor)
 };

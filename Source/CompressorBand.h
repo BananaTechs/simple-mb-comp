@@ -16,7 +16,5 @@ public:
     juce::AudioParameterBool* bypass{ nullptr };
 
 private:
-    
-
     juce::dsp::Compressor<float> compressor;
 };
