@@ -11,6 +11,61 @@
 #include <JuceHeader.h>
 #include "CompressorBand.h"
 
+namespace params
+{
+    enum Names
+    {
+        LOW_MID_CROSSOVER_FREQ,
+        MID_HIGH_CROSSOVER_FREQ,
+
+        ATTACK_LOW,
+        ATTACK_MID,
+        ATTACK_HIGH,
+
+        RELEASE_LOW,
+        RELEASE_MID,
+        RELEASE_HIGH,
+
+        THRESHOLD_LOW,
+        THRESHOLD_MID,
+        THRESHOLD_HIGH,
+
+        RATIO_LOW,
+        RATIO_MID,
+        RATIO_HIGH,
+
+        BYPASS_LOW,
+        BYPASS_MID,
+        BYPASS_HIGH,
+    };
+
+    inline const std::map<Names, juce::String> getParams()
+    {
+        static std::map<Names, juce::String> params =
+        {
+            { LOW_MID_CROSSOVER_FREQ, "Low-Mid Crossover Frquency" },
+            { MID_HIGH_CROSSOVER_FREQ, "Mid-High Crossover Frquency" },
+            { ATTACK_LOW, "Attack Low Band" },
+            { ATTACK_MID, "Attack Mid Band" },
+            { ATTACK_HIGH, "Attack High Band" },
+            { RELEASE_LOW, "Release Low Band" },
+            { RELEASE_MID, "Release Mid Band" },
+            { RELEASE_HIGH, "Release High Band" },
+            { THRESHOLD_LOW, "Threshold Low Band" },
+            { THRESHOLD_MID, "Threshold Mid Band" },
+            { THRESHOLD_HIGH, "Threshold High Band" },
+            { RATIO_LOW, "Ratio Low Band" },
+            { RATIO_MID, "Ratio Mid Band" },
+            { RATIO_HIGH, "Ratio High Band" },
+            { BYPASS_LOW, "Bypass Low Band" },
+            { BYPASS_MID, "Bypass Mid Band" },
+            { BYPASS_HIGH, "Bypass High Band" },
+        };
+
+        return params;
+    }
+}
+
 //==============================================================================
 /**
 */

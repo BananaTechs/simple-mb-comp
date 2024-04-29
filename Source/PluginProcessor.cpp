@@ -22,7 +22,33 @@ SimpleMBCompAudioProcessor::SimpleMBCompAudioProcessor()
                        )
 #endif
 {
-    compressorBand.setParams(apvts);
+    using namespace params;
+    const auto& params = getParams();
+
+    auto setFloatParam = [&apvts = this->apvts, &params](auto& param, const auto& paramName)
+    {
+        param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(params.at(paramName)));
+        jassert(param != nullptr);
+    };
+
+    auto setChoiceParam = [&apvts = this->apvts, &params](auto& param, const auto& paramName)
+    {
+        param = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(params.at(paramName)));
+        jassert(param != nullptr);
+    };
+
+    auto setBoolParam = [&apvts = this->apvts, &params](auto& param, const auto& paramName)
+    {
+        param = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(params.at(paramName)));
+        jassert(param != nullptr);
+    };
+    
+
+    setFloatParam(compressorBand.attack, Names::ATTACK_LOW);
+    setFloatParam(compressorBand.release, Names::RELEASE_LOW);
+    setFloatParam(compressorBand.threshold, Names::THRESHOLD_LOW);
+    setChoiceParam(compressorBand.ratio, Names::RATIO_LOW);
+    setBoolParam(compressorBand.bypass, Names::BYPASS_LOW);
 }
 
 SimpleMBCompAudioProcessor::~SimpleMBCompAudioProcessor()
@@ -193,26 +219,28 @@ void SimpleMBCompAudioProcessor::setStateInformation (const void* data, int size
 
 juce::AudioProcessorValueTreeState::ParameterLayout SimpleMBCompAudioProcessor::createParameterLayout()
 {
+    using namespace juce;
+    using namespace params;
     APVTS::ParameterLayout layout;
 
-    using namespace juce;
+    const auto& params = getParams();
 
     layout.add(std::make_unique<AudioParameterFloat>(
-        THRESHOLD, 
-        THRESHOLD, 
+        params.at(Names::THRESHOLD_LOW),
+        params.at(Names::THRESHOLD_LOW),
         NormalisableRange<float>(-60, 12, 1, 1), 
         0));
 
     auto attackReleaseRange = NormalisableRange<float>(5, 500, 1, 1);
 
     layout.add(std::make_unique<AudioParameterFloat>(
-        ATTACK,
-        ATTACK,
+        params.at(Names::ATTACK_LOW),
+        params.at(Names::ATTACK_LOW),
         attackReleaseRange,
         50));
     layout.add(std::make_unique<AudioParameterFloat>(
-        RELEASE,
-        RELEASE,
+        params.at(Names::RELEASE_LOW),
+        params.at(Names::RELEASE_LOW),
         attackReleaseRange,
         250));
 
@@ -224,15 +252,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleMBCompAudioProcessor::
     }
 
     layout.add(std::make_unique<AudioParameterChoice>(
-        RATIO,
-        RATIO,
+        params.at(Names::RATIO_LOW),
+        params.at(Names::RATIO_LOW),
         sa,
         3));
 
     layout.add(std::make_unique<AudioParameterBool>(
-        BYPASS,
-        BYPASS,
+        params.at(Names::BYPASS_LOW),
+        params.at(Names::BYPASS_LOW),
         false));
+
+    layout.add(std::make_unique<AudioParameterFloat>(
+        params.at(Names::LOW_MID_CROSSOVER_FREQ),
+        params.at(Names::LOW_MID_CROSSOVER_FREQ),
+        NormalisableRange<float>(20, 20000, 1, 0.2),
+        160));
 
     return layout;
 }
