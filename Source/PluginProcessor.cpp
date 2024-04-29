@@ -22,6 +22,11 @@ SimpleMBCompAudioProcessor::SimpleMBCompAudioProcessor()
                        )
 #endif
 {
+    attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(ATTACK));
+    release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(RELEASE));
+    threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(THRESHOLD));
+    ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(RATIO));
+    bypass = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(BYPASS));
 }
 
 SimpleMBCompAudioProcessor::~SimpleMBCompAudioProcessor()
@@ -95,6 +100,12 @@ void SimpleMBCompAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.sampleRate = sampleRate;
+    spec.numChannels = getTotalNumOutputChannels();
+    compressor.prepare(spec);
 }
 
 void SimpleMBCompAudioProcessor::releaseResources()
@@ -144,18 +155,17 @@ void SimpleMBCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
+    compressor.setAttack(attack->get());
+    compressor.setRelease(release->get());
+    compressor.setThreshold(threshold->get());
+    compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue());
 
-        // ..do something to the data...
-    }
+    auto block = juce::dsp::AudioBlock<float>(buffer);
+    auto context = juce::dsp::ProcessContextReplacing<float>(block);
+
+    context.isBypassed = bypass->get();
+
+    compressor.process(context);
 }
 
 //==============================================================================
@@ -201,21 +211,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleMBCompAudioProcessor::
     using namespace juce;
 
     layout.add(std::make_unique<AudioParameterFloat>(
-        "Threshold", 
-        "Threshold", 
+        THRESHOLD, 
+        THRESHOLD, 
         NormalisableRange<float>(-60, 12, 1, 1), 
         0));
 
     auto attackReleaseRange = NormalisableRange<float>(5, 500, 1, 1);
 
     layout.add(std::make_unique<AudioParameterFloat>(
-        "Attack",
-        "Attack",
+        ATTACK,
+        ATTACK,
         attackReleaseRange,
         50));
     layout.add(std::make_unique<AudioParameterFloat>(
-        "Release",
-        "Release",
+        RELEASE,
+        RELEASE,
         attackReleaseRange,
         250));
 
@@ -227,10 +237,15 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleMBCompAudioProcessor::
     }
 
     layout.add(std::make_unique<AudioParameterChoice>(
-        "Ratio",
-        "Ratio",
+        RATIO,
+        RATIO,
         sa,
         3));
+
+    layout.add(std::make_unique<AudioParameterBool>(
+        BYPASS,
+        BYPASS,
+        false));
 
     return layout;
 }
