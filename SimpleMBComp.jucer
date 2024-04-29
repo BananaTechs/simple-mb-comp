@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" companyName="Banana Technologies">
   <MAINGROUP id="CTS8JG" name="SimpleMBComp">
     <GROUP id="{9E5C152A-6606-5053-A4D6-08E7B9B1A7F6}" name="Source">
+      <FILE id="QqC6Kj" name="CompressorBand.cpp" compile="1" resource="0"
+            file="Source/CompressorBand.cpp"/>
+      <FILE id="kNjcQe" name="CompressorBand.h" compile="0" resource="0"
+            file="Source/CompressorBand.h"/>
       <FILE id="Xk5D2m" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="suwEKz" name="PluginProcessor.h" compile="0" resource="0"

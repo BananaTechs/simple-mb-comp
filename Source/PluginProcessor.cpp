@@ -22,11 +22,7 @@ SimpleMBCompAudioProcessor::SimpleMBCompAudioProcessor()
                        )
 #endif
 {
-    attack = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(ATTACK));
-    release = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(RELEASE));
-    threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(THRESHOLD));
-    ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(RATIO));
-    bypass = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(BYPASS));
+    compressorBand.setParams(apvts);
 }
 
 SimpleMBCompAudioProcessor::~SimpleMBCompAudioProcessor()
@@ -105,7 +101,7 @@ void SimpleMBCompAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
     spec.numChannels = getTotalNumOutputChannels();
-    compressor.prepare(spec);
+    compressorBand.prepare(spec);
 }
 
 void SimpleMBCompAudioProcessor::releaseResources()
@@ -155,17 +151,8 @@ void SimpleMBCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    compressor.setAttack(attack->get());
-    compressor.setRelease(release->get());
-    compressor.setThreshold(threshold->get());
-    compressor.setRatio(ratio->getCurrentChoiceName().getFloatValue());
-
-    auto block = juce::dsp::AudioBlock<float>(buffer);
-    auto context = juce::dsp::ProcessContextReplacing<float>(block);
-
-    context.isBypassed = bypass->get();
-
-    compressor.process(context);
+    compressorBand.updateCompressorSettings();
+    compressorBand.process(buffer);
 }
 
 //==============================================================================
