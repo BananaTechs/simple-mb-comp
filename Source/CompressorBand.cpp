@@ -18,6 +18,12 @@ void CompressorBand::updateCompressorSettings()
 
 void CompressorBand::process(juce::AudioBuffer<float>& buffer)
 {
+    if (mute->get())
+    {
+        buffer.clear();
+        return;
+    }
+
     auto block = juce::dsp::AudioBlock<float>(buffer);
     auto context = juce::dsp::ProcessContextReplacing<float>(block);
 

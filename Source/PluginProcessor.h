@@ -17,6 +17,7 @@ namespace params
     {
         LOW_MID_CROSSOVER_FREQ,
         MID_HIGH_CROSSOVER_FREQ,
+        BYPASS_GLOBAL,
 
         ATTACK_LOW,
         ATTACK_MID,
@@ -37,6 +38,14 @@ namespace params
         BYPASS_LOW,
         BYPASS_MID,
         BYPASS_HIGH,
+
+        MUTE_LOW,
+        MUTE_MID,
+        MUTE_HIGH,
+
+        SOLO_LOW,
+        SOLO_MID,
+        SOLO_HIGH,
     };
 
     inline const std::map<Names, juce::String> getParams()
@@ -45,6 +54,7 @@ namespace params
         {
             { LOW_MID_CROSSOVER_FREQ, "Low-Mid Crossover Frequency" },
             { MID_HIGH_CROSSOVER_FREQ, "Mid-High Crossover Frequency" },
+            { BYPASS_GLOBAL, "Bypass Global" },
             { ATTACK_LOW, "Attack Low Band" },
             { ATTACK_MID, "Attack Mid Band" },
             { ATTACK_HIGH, "Attack High Band" },
@@ -60,6 +70,12 @@ namespace params
             { BYPASS_LOW, "Bypass Low Band" },
             { BYPASS_MID, "Bypass Mid Band" },
             { BYPASS_HIGH, "Bypass High Band" },
+            { MUTE_LOW, "Mute Low Band" },
+            { MUTE_MID, "Mute Mid Band" },
+            { MUTE_HIGH, "Mute High Band" },
+            { SOLO_LOW, "Solo Low Band" },
+            { SOLO_MID, "Solo Mid Band" },
+            { SOLO_HIGH, "Solo High Band" },
         };
 
         return params;
@@ -114,14 +130,11 @@ public:
 
     APVTS apvts { *this, nullptr, "Parameters", createParameterLayout() };
 
-    inline static const juce::String ATTACK = "Attack";
-    inline static const juce::String RELEASE = "Release";
-    inline static const juce::String THRESHOLD = "Threshold";
-    inline static const juce::String RATIO = "Ratio";
-    inline static const juce::String BYPASS = "Bypass";
-
 private:
-    CompressorBand compressorBand;
+    std::array<CompressorBand, 3> compressorBands;
+    CompressorBand& lowBandComp = compressorBands[0];
+    CompressorBand& midBandComp = compressorBands[1];
+    CompressorBand& highBandComp = compressorBands[2];
 
     using Filter = juce::dsp::LinkwitzRileyFilter<float>;
 
@@ -132,6 +145,7 @@ private:
 
     juce::AudioParameterFloat* lowMidCrossoverFreq{ nullptr };
     juce::AudioParameterFloat* midHighCrossoverFreq{ nullptr };
+    juce::AudioParameterBool* globalBypass{ nullptr };
 
     std::array<juce::AudioBuffer<float>, 3> filterBuffers;
 
